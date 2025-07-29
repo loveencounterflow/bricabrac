@@ -13,6 +13,8 @@
   "packageManager": "pnpm@10.13.1",
   "dependencies": {
     "execa": "^9.6.0",
-    "guy": "^14.2.0"
+    "fs-extra": "^11.3.0",
+    "guy": "^14.2.0",
+    "trash": "^9.0.0"
   }
 }
