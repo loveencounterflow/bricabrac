@@ -2,7 +2,7 @@
   "name": "bricabrac",
   "version": "0.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "lib/main.js",
   "repository": "github:loveencounterflow/bricabrac",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -10,5 +10,9 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "packageManager": "pnpm@10.13.1"
+  "packageManager": "pnpm@10.13.1",
+  "dependencies": {
+    "execa": "^9.6.0",
+    "guy": "^14.2.0"
+  }
 }
