@@ -86,7 +86,7 @@ internals =
 #-----------------------------------------------------------------------------------------------------------
 match_line = ( line ) ->
   unless ( typeof line ) is 'string'
-    raise new Error "Ωcmdprs_1 expected a line of text, got #{rpr line}"
+    throw new Error "Ωcmdprs_1 expected a line of text, got #{rpr line}"
   for pattern_name, pattern of internals.patterns
     if ( match = line.match pattern )?
       groups = Object.fromEntries ( [ k, ( v ? null ), ] for k, v of match.groups )

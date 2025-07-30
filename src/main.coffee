@@ -68,18 +68,16 @@ prepare_db = ->
   db SQL"""drop table if exists sources;"""
   db SQL"""drop table if exists lines;"""
   db SQL"""create table sources (
-    id          integer not null,
-    path        text    not null
-    );
-    """
+    source_id               integer not null,
+    source_path             text    not null,
+    unique ( source_path ),
+    primary key ( source_id ) ); """
   db SQL"""create table lines (
-    source      integer not null,
-    lnr         integer not null,
-    line        text    not null,
-    foreign key ( source ) references sources ( id ),
-    primary key ( source, lnr )
-    );
-    """
+    source_id               integer not null,
+    line_nr                 integer not null,
+    line_text               text    not null,
+    foreign key ( source_id ) references sources,
+    primary key ( source_id, line_nr ) ); """
   #.........................................................................................................
   return db
 
@@ -95,35 +93,50 @@ A_demo_dbay = ->
 
 #===========================================================================================================
 get_pipeline = ( db ) ->
-  cfg         = get_cfg()
+  cfg           = get_cfg()
+  #.........................................................................................................
+  insert_source = SQL"""
+    insert into sources ( source_path )
+      values ( $source_path )
+      returning *;"""
+  #.........................................................................................................
+  insert_line = SQL"""
+    insert into lines ( source_id, line_nr, line_text )
+      values ( $source_id, $line_nr, $line_text );"""
   #.........................................................................................................
   P =
     #.......................................................................................................
     $db_insert_source: -> ( { source_path, }, send ) =>
-      source_id = 1
+      # source_id = 1
+      { source_id, } = db.alt.first_row insert_source, { source_path, }
       send { source_id, source_path, }
     #.......................................................................................................
     $walk_lines_with_positions: -> ( { source_id, source_path, }, send ) =>
-      for { lnr, line, eol, } from GUY.fs.walk_lines_with_positions source_path
-        send { source_id, lnr, line, eol, }
+      for { lnr: line_nr, line: line_text, eol, } from GUY.fs.walk_lines_with_positions source_path
+        send { source_id, line_nr, line_text, }
       return null
     #.......................................................................................................
+    $insert_line: -> ( line, send ) =>
+      debug 'Ωbrbr__13', line
+      db.alt insert_line, line
+      send line
+    #.......................................................................................................
     $parse_command: -> ( d, send ) =>
-      { pattern_name, groups, } = COMMAND_PARSER.match_line d.line
+      { pattern_name, groups, } = COMMAND_PARSER.match_line d.line_text
       if groups?
         if pattern_name is 'generic'
           null
         else
           d.dsc = groups
-      # debug 'Ωbrbr__10', lnr, pattern_name, { groups.groups..., } if groups?
+      # debug 'Ωbrbr__11', lnr, pattern_name, { groups.groups..., } if groups?
       send d
     #.......................................................................................................
     $show: -> ( d ) =>
-      whisper 'Ωbrbr__11', d.source_id, d.lnr, d.line
+      whisper 'Ωbrbr__12', d.source_id, d.line_nr, d.line_text
       if d.dsc?
-        debug 'Ωbrbr___9', rpr d.dsc.slash
+        debug 'Ωbrbr__13', rpr d.dsc.slash
         startstop = if d.dsc.slash is '' then 'start' else 'stop'
-        help 'Ωbrbr__12', d.dsc.prefix, startstop, d.dsc.command, d.dsc.position, d.dsc.p1, d.dsc.suffix
+        help 'Ωbrbr__14', d.dsc.prefix, startstop, d.dsc.command, d.dsc.position, d.dsc.p1, d.dsc.suffix
       return null
   #.........................................................................................................
   collector = []
@@ -131,10 +144,12 @@ get_pipeline = ( db ) ->
   p.push [ { source_path: cfg.main_path, }, ]
   p.push P.$db_insert_source()
   p.push P.$walk_lines_with_positions()
+  p.push P.$insert_line()
   p.push P.$parse_command()
   p.push P.$show()
   # p.push ( d, send ) -> collector.push d #; help collector
   p.run()
+  debug 'Ωbrbr__13', row for row from db SQL"""select * from lines;"""
   #.........................................................................................................
   return collector
 
