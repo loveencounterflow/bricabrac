@@ -63,9 +63,30 @@ A_demo = ->
   #.........................................................................................................
   return null
 
+#===========================================================================================================
+demo_dbay = ->
+  { DBay, SQL, }          = require 'dbay'
+  debug 'Ω__10', SQL"""select * from sqlite_schema;"""
+  debug 'Ω__11', db = new DBay { path: '/dev/shm/bricabrac.db', }
+  db SQL"""create table sources (
+    id          integer not null,
+    path        text    not null
+    );
+    """
+  db SQL"""create table lines (
+    source      integer not null,
+    lnr         integer not null,
+    line        text    not null,
+    foreign key ( source ) references sources ( id ),
+    primary key ( source, lnr )
+    );
+    """
+  #.........................................................................................................
+  return null
 
 #===========================================================================================================
 if module is require.main then await do =>
   await A_demo()
+  await demo_dbay()
   return null
 
