@@ -12,6 +12,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.13.1",
   "dependencies": {
+    "dbay": "^16.1.6",
     "execa": "^9.6.0",
     "fs-extra": "^11.3.0",
     "guy": "^14.2.0",
