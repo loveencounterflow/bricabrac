@@ -67,6 +67,7 @@ prepare_db = ->
   #.........................................................................................................
   db SQL"""drop table if exists sources;"""
   db SQL"""drop table if exists lines;"""
+  db SQL"""drop table if exists cmds;"""
   db SQL"""create table sources (
     source_id               integer not null,
     source_path             text    not null,
@@ -77,6 +78,14 @@ prepare_db = ->
     line_nr                 integer not null,
     line_text               text    not null,
     foreign key ( source_id ) references sources,
+    primary key ( source_id, line_nr ) ); """
+  db SQL"""create table cmds (
+    source_id               integer not null,
+    line_nr                 integer not null,
+    cmd_name                text    not null,
+    cmd_position            text    not null,
+    cmd_p1                  text    not null,
+    foreign key ( source_id, line_nr ) references lines,
     primary key ( source_id, line_nr ) ); """
   #.........................................................................................................
   return db
@@ -104,6 +113,10 @@ get_pipeline = ( db ) ->
     insert into lines ( source_id, line_nr, line_text )
       values ( $source_id, $line_nr, $line_text );"""
   #.........................................................................................................
+  insert_cmd = SQL"""
+    insert into cmds ( source_id, line_nr, cmd_name, cmd_position, cmd_p1 )
+      values ( $source_id, $line_nr, $cmd_name, $cmd_position, $cmd_p1 );"""
+  #.........................................................................................................
   P =
     #.......................................................................................................
     $db_insert_source: -> ( { source_path, }, send ) =>
@@ -117,11 +130,11 @@ get_pipeline = ( db ) ->
       return null
     #.......................................................................................................
     $insert_line: -> ( line, send ) =>
-      debug 'Ωbrbr__13', line
+      debug 'Ωbrbr__10', line
       db.alt insert_line, line
       send line
     #.......................................................................................................
-    $parse_command: -> ( d, send ) =>
+    $parse_cmd: -> ( d, send ) =>
       { pattern_name, groups, } = COMMAND_PARSER.match_line d.line_text
       if groups?
         if pattern_name is 'generic'
@@ -129,6 +142,15 @@ get_pipeline = ( db ) ->
         else
           d.dsc = groups
       # debug 'Ωbrbr__11', lnr, pattern_name, { groups.groups..., } if groups?
+      send d
+    #.......................................................................................................
+    $insert_cmd: -> ( d, send ) =>
+      return send d unless d.dsc?
+      { source_id, line_nr, dsc,        } = d
+      { cmd_name, cmd_position, cmd_p1, } = dsc
+      ### TAINT this shoud be done by type handling, casting ###
+      cmd_position ?= 'below'
+      db.alt insert_cmd, { source_id, line_nr, cmd_name, cmd_position, cmd_p1, }
       send d
     #.......................................................................................................
     $show: -> ( d ) =>
@@ -145,11 +167,15 @@ get_pipeline = ( db ) ->
   p.push P.$db_insert_source()
   p.push P.$walk_lines_with_positions()
   p.push P.$insert_line()
-  p.push P.$parse_command()
+  p.push P.$parse_cmd()
+  p.push P.$insert_cmd()
   p.push P.$show()
   # p.push ( d, send ) -> collector.push d #; help collector
   p.run()
-  debug 'Ωbrbr__13', row for row from db SQL"""select * from lines;"""
+  echo '—————————————————————————————————————————————————————————————————————'
+  urge 'Ωbrbr__15', row for row from db SQL"""select * from sources;"""
+  help 'Ωbrbr__16', row for row from db SQL"""select * from lines limit 10;"""
+  info 'Ωbrbr__16', row for row from db SQL"""select * from cmds;"""
   #.........................................................................................................
   return collector
 

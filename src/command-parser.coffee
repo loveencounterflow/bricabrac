@@ -28,10 +28,10 @@ internals =
       <
       <
       (?<slash> \/? )
-      (?<command> insert | replace )
+      (?<cmd_name> insert | replace )
       \x20+
-      ( (?<position> below | above ) \x20+ )?
-      (src\s*=\s*)?(?<p1>
+      ( (?<cmd_position> below | above ) \x20+ )?
+      (src\s*=\s*)?(?<cmd_p1>
         (?:
           (?: ' (?: \\' | [^ ' ]  )+ ' ) |
           (?: " (?: \\" | [^ " ]  )+ " ) |
@@ -51,11 +51,11 @@ internals =
       <
       <
       (?<slash> \/? )
-      (?<command> publish )
+      (?<cmd_name> publish )
       \x20+
-      ( (?<disposition> one   | enclosed  ) \x20+ )?
-      ( (?<position>    below | above     ) \x20+ )?
-      (as\s*=\s*)?(?<p1>
+      ( (?<disposition>   one   | enclosed  ) \x20+ )?
+      ( (?<cmd_position>  below | above     ) \x20+ )?
+      (as\s*=\s*)?(?<cmd_p1>
         (?:
           (?: ' \# (?: \\' | [^ ' ]  )+ ' ) |
           (?: " \# (?: \\" | [^ " ]  )+ " )
@@ -74,7 +74,7 @@ internals =
       <
       <
       (?<slash> \/? )
-      (?<p1> .*? )
+      (?<cmd_p1> .*? )
       >
       (?<user_eoi> [^ > ]* )
       >
