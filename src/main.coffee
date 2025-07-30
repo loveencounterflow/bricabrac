@@ -21,6 +21,10 @@ GUY                       = require 'guy'
 FSE                       = require 'fs-extra'
 PATH                      = require 'node:path'
 A_trash                   = ( require 'trash' ).default
+{ DBay,
+  SQL,                  } = require 'dbay'
+COMMAND_PARSER            = require './command-parser'
+{ Pipeline,             } = require 'moonriver'
 
 
 #===========================================================================================================
@@ -34,40 +38,35 @@ get_cfg = ->
   #.........................................................................................................
   R.main_path   = PATH.join R.target_path, 'main.md'
   #.........................................................................................................
+  db_cfg =
+    path: '/dev/shm/bricabrac.db'
+  #.........................................................................................................
   return R
 
 #===========================================================================================================
 A_prepare_arena = ->
   cfg         = get_cfg()
   #.........................................................................................................
-  whisper 'Ω___1', '—————————————————————————————————————————————————————————————————————'
-  urge    'Ω___2', "trashing: #{cfg.target_path}"
+  whisper 'Ωbrbr___1', '—————————————————————————————————————————————————————————————————————'
+  urge    'Ωbrbr___2', "trashing: #{cfg.target_path}"
   message = if ( await A_trash cfg.target_path )? then "done" else "nothing to do"
-  help    'Ω___3', "trashing: #{message}"
-  whisper 'Ω___4', '—————————————————————————————————————————————————————————————————————'
-  urge    'Ω___5', "copying from: #{cfg.source_path}"
-  urge    'Ω___6', "copying   to: #{cfg.target_path}"
+  help    'Ωbrbr___3', "trashing: #{message}"
+  whisper 'Ωbrbr___4', '—————————————————————————————————————————————————————————————————————'
+  urge    'Ωbrbr___5', "copying from: #{cfg.source_path}"
+  urge    'Ωbrbr___6', "copying   to: #{cfg.target_path}"
   FSE.copySync cfg.source_path, cfg.target_path, { overwrite: false, errorOnExist: true, dereference: true, }
-  help    'Ω___7', "copying: done"
-  whisper 'Ω___8', '—————————————————————————————————————————————————————————————————————'
+  help    'Ωbrbr___7', "copying: done"
+  whisper 'Ωbrbr___8', '—————————————————————————————————————————————————————————————————————'
   #.........................................................................................................
   return null
 
 #===========================================================================================================
-A_demo = ->
-  cfg         = get_cfg()
+prepare_db = ->
+  cfg = get_cfg()
+  db  = new DBay cfg.db_cfg
   #.........................................................................................................
-  await A_prepare_arena()
-  for line from GUY.fs.walk_lines cfg.main_path
-    debug 'Ω___9', rpr line
-  #.........................................................................................................
-  return null
-
-#===========================================================================================================
-demo_dbay = ->
-  { DBay, SQL, }          = require 'dbay'
-  debug 'Ω__10', SQL"""select * from sqlite_schema;"""
-  debug 'Ω__11', db = new DBay { path: '/dev/shm/bricabrac.db', }
+  db SQL"""drop table if exists sources;"""
+  db SQL"""drop table if exists lines;"""
   db SQL"""create table sources (
     id          integer not null,
     path        text    not null
@@ -82,11 +81,66 @@ demo_dbay = ->
     );
     """
   #.........................................................................................................
+  return db
+
+#===========================================================================================================
+A_demo_dbay = ->
+  await         A_prepare_arena()
+  cfg         = get_cfg()
+  db          = prepare_db()
+  #.........................................................................................................
+  debug 'Ωbrbr___9', get_pipeline db
+  #.........................................................................................................
   return null
 
 #===========================================================================================================
+get_pipeline = ( db ) ->
+  cfg         = get_cfg()
+  #.........................................................................................................
+  P =
+    #.......................................................................................................
+    $db_insert_source: -> ( { source_path, }, send ) =>
+      source_id = 1
+      send { source_id, source_path, }
+    #.......................................................................................................
+    $walk_lines_with_positions: -> ( { source_id, source_path, }, send ) =>
+      for { lnr, line, eol, } from GUY.fs.walk_lines_with_positions source_path
+        send { source_id, lnr, line, eol, }
+      return null
+    #.......................................................................................................
+    $parse_command: -> ( d, send ) =>
+      { pattern_name, groups, } = COMMAND_PARSER.match_line d.line
+      if groups?
+        if pattern_name is 'generic'
+          null
+        else
+          d.dsc = groups
+      # debug 'Ωbrbr__10', lnr, pattern_name, { groups.groups..., } if groups?
+      send d
+    #.......................................................................................................
+    $show: -> ( d ) =>
+      whisper 'Ωbrbr__11', d.source_id, d.lnr, d.line
+      if d.dsc?
+        debug 'Ωbrbr___9', rpr d.dsc.slash
+        startstop = if d.dsc.slash is '' then 'start' else 'stop'
+        help 'Ωbrbr__12', d.dsc.prefix, startstop, d.dsc.command, d.dsc.position, d.dsc.p1, d.dsc.suffix
+      return null
+  #.........................................................................................................
+  collector = []
+  p         = new Pipeline()
+  p.push [ { source_path: cfg.main_path, }, ]
+  p.push P.$db_insert_source()
+  p.push P.$walk_lines_with_positions()
+  p.push P.$parse_command()
+  p.push P.$show()
+  # p.push ( d, send ) -> collector.push d #; help collector
+  p.run()
+  #.........................................................................................................
+  return collector
+
+
+#===========================================================================================================
 if module is require.main then await do =>
-  await A_demo()
-  await demo_dbay()
+  await A_demo_dbay()
   return null
 
