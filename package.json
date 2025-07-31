@@ -12,7 +12,9 @@
   "license": "ISC",
   "packageManager": "pnpm@10.13.1",
   "dependencies": {
+    "bricabrac-single-file-modules": "^0.2.0",
     "dbay": "^16.1.6",
+    "effstring": "^1.4.0",
     "execa": "^9.6.0",
     "fs-extra": "^11.3.0",
     "guy": "^14.2.0",
