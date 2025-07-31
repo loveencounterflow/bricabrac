@@ -23,14 +23,13 @@ GUY                       = require 'guy'
 internals =
   patterns:
     insert_replace: /// ^
-      (?<prefix> .*? )
+      (?<cmd_prefix> .*? )
       <
       <
       <
-      (?<slash> \/? )
-      (?<cmd_name> insert | replace )
+      (?<cmd_slash> \/? )
+      (?<cmd_name> insert | replace-above | replace-below )
       \x20+
-      ( (?<cmd_position> below | above ) \x20+ )?
       (src\s*=\s*)?(?<cmd_p1>
         (?:
           (?: ' (?: \\' | [^ ' ]  )+ ' ) |
@@ -39,22 +38,21 @@ internals =
           )
         )
       >
-      (?<user_eoi> [^ > ]* )
+      (?<cmd_user_eoi> [^ > ]* )
       >
-      (?<system_eoi> [^ > ]* )
+      (?<cmd_system_eoi> [^ > ]* )
       >
-      (?<suffix> .*? )
+      (?<cmd_suffix> .*? )
       $ ///
     publish: /// ^
-      (?<prefix> .*? )
+      (?<cmd_prefix> .*? )
       <
       <
       <
-      (?<slash> \/? )
+      (?<cmd_slash> \/? )
       (?<cmd_name> publish )
       \x20+
-      ( (?<disposition>   one   | enclosed  ) \x20+ )?
-      ( (?<cmd_position>  below | above     ) \x20+ )?
+      ( (?<cmd_disposition>   one   | enclosed  ) \x20+ )?
       (as\s*=\s*)?(?<cmd_p1>
         (?:
           (?: ' \# (?: \\' | [^ ' ]  )+ ' ) |
@@ -62,36 +60,23 @@ internals =
           )
         )
       >
-      (?<user_eoi> [^ > ]* )
+      (?<cmd_user_eoi> [^ > ]* )
       >
-      (?<system_eoi> [^ > ]* )
+      (?<cmd_system_eoi> [^ > ]* )
       >
-      (?<suffix> .*? )
+      (?<cmd_suffix> .*? )
       $ ///
-    generic: /// ^
-      (?<prefix> .*? )
-      <
-      <
-      <
-      (?<slash> \/? )
-      (?<cmd_p1> .*? )
-      >
-      (?<user_eoi> [^ > ]* )
-      >
-      (?<system_eoi> [^ > ]* )
-      >
-      (?<suffix> .*? )
-      $ ///
+    similar: /// ^ (?<cmd_prefix> .*? ) <<< [^>]* >[^>]*>[^>]*> (?<cmd_suffix> .*? ) $ ///
 
 #-----------------------------------------------------------------------------------------------------------
 match_line = ( line ) ->
   unless ( typeof line ) is 'string'
     throw new Error "Ωcmdprs_1 expected a line of text, got #{rpr line}"
-  for pattern_name, pattern of internals.patterns
+  for cmd_pattern, pattern of internals.patterns
     if ( match = line.match pattern )?
       groups = Object.fromEntries ( [ k, ( v ? null ), ] for k, v of match.groups )
-      return { pattern_name, groups, }
-  return { pattern_name: null, groups: null, }
+      return { cmd_pattern, groups..., }
+  return null
 
 #===========================================================================================================
 module.exports = { match_line, internals, }

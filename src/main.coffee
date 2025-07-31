@@ -83,8 +83,15 @@ prepare_db = ->
     source_id               integer not null,
     line_nr                 integer not null,
     cmd_name                text    not null,
-    cmd_position            text    not null,
     cmd_p1                  text    not null,
+    -- cmd_extent indicates count of lines to be replaced plus one (including line with openening *and* line
+    -- with closing cmd, if any:
+    -- * positive for lines below,
+    -- * negatives above;
+    -- * zero indicates no insertion / replacement / export
+    -- * plus one means insert between cmd line and adjacent line below, *preserving* adjacent line
+    -- * plus two means replace open cmd line and one plain line
+    cmd_extent              integer not null default 0,
     foreign key ( source_id, line_nr ) references lines,
     primary key ( source_id, line_nr ) ); """
   #.........................................................................................................
@@ -96,12 +103,12 @@ A_demo_dbay = ->
   cfg         = get_cfg()
   db          = prepare_db()
   #.........................................................................................................
-  debug 'Ωbrbr___9', get_pipeline db
+  run_pipeline db
   #.........................................................................................................
   return null
 
 #===========================================================================================================
-get_pipeline = ( db ) ->
+run_pipeline = ( db ) ->
   cfg           = get_cfg()
   #.........................................................................................................
   insert_source = SQL"""
@@ -114,8 +121,8 @@ get_pipeline = ( db ) ->
       values ( $source_id, $line_nr, $line_text );"""
   #.........................................................................................................
   insert_cmd = SQL"""
-    insert into cmds ( source_id, line_nr, cmd_name, cmd_position, cmd_p1 )
-      values ( $source_id, $line_nr, $cmd_name, $cmd_position, $cmd_p1 );"""
+    insert into cmds ( source_id, line_nr, cmd_name, cmd_p1 )
+      values ( $source_id, $line_nr, $cmd_name, $cmd_p1 );"""
   #.........................................................................................................
   P =
     #.......................................................................................................
@@ -130,35 +137,38 @@ get_pipeline = ( db ) ->
       return null
     #.......................................................................................................
     $insert_line: -> ( line, send ) =>
-      debug 'Ωbrbr__10', line
+      # debug 'Ωbrbr___9', line
       db.alt insert_line, line
       send line
     #.......................................................................................................
     $parse_cmd: -> ( d, send ) =>
-      { pattern_name, groups, } = COMMAND_PARSER.match_line d.line_text
-      if groups?
-        if pattern_name is 'generic'
-          null
-        else
-          d.dsc = groups
-      # debug 'Ωbrbr__11', lnr, pattern_name, { groups.groups..., } if groups?
+      return send d unless ( match = COMMAND_PARSER.match_line d.line_text )?
+      d                   = { d..., match..., }
+      d.cmd_role          = if d.cmd_slash is '/' then 'close' else 'open'
+      d.cmd_disposition  ?= null
       send d
     #.......................................................................................................
     $insert_cmd: -> ( d, send ) =>
-      return send d unless d.dsc?
-      { source_id, line_nr, dsc,        } = d
-      { cmd_name, cmd_position, cmd_p1, } = dsc
-      ### TAINT this shoud be done by type handling, casting ###
-      cmd_position ?= 'below'
-      db.alt insert_cmd, { source_id, line_nr, cmd_name, cmd_position, cmd_p1, }
+      return send d unless d.cmd_name?
+      db.alt insert_cmd, d
       send d
     #.......................................................................................................
     $show: -> ( d ) =>
-      whisper 'Ωbrbr__12', d.source_id, d.line_nr, d.line_text
-      if d.dsc?
-        debug 'Ωbrbr__13', rpr d.dsc.slash
-        startstop = if d.dsc.slash is '' then 'start' else 'stop'
-        help 'Ωbrbr__14', d.dsc.prefix, startstop, d.dsc.command, d.dsc.position, d.dsc.p1, d.dsc.suffix
+      # whisper 'Ωbrbr__10', d.source_id, d.line_nr, d.line_text
+      if ( match = d.line_text.match COMMAND_PARSER.internals.patterns.similar )?
+        debug 'Ωbrbr__11', ( GUY.trm.white GUY.trm.reverse GUY.trm.bold d.line_text ), { match.groups..., }
+      if d.cmd_name?
+        help 'Ωbrbr__12',
+          d.cmd_role,
+          d.cmd_pattern,
+          d.cmd_prefix,
+          d.cmd_slash,
+          d.cmd_name,
+          d.cmd_disposition,
+          d.cmd_p1,
+          d.cmd_user_eoi,
+          d.cmd_system_eoi,
+          d.cmd_suffix
       return null
   #.........................................................................................................
   collector = []
@@ -173,11 +183,14 @@ get_pipeline = ( db ) ->
   # p.push ( d, send ) -> collector.push d #; help collector
   p.run()
   echo '—————————————————————————————————————————————————————————————————————'
-  urge 'Ωbrbr__15', row for row from db SQL"""select * from sources;"""
+  debug 'Ωbrbr__13', "sources:"
+  urge 'Ωbrbr__14', row for row from db SQL"""select * from sources;"""
+  debug 'Ωbrbr__15', "lines:"
   help 'Ωbrbr__16', row for row from db SQL"""select * from lines limit 10;"""
-  info 'Ωbrbr__16', row for row from db SQL"""select * from cmds;"""
+  debug 'Ωbrbr__17', "cmds:"
+  info 'Ωbrbr__18', row for row from db SQL"""select * from cmds;"""
   #.........................................................................................................
-  return collector
+  return null
 
 
 #===========================================================================================================
