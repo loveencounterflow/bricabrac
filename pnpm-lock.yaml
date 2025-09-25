@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      bricabrac-single-file-modules:
-        specifier: ^0.2.0
-        version: 0.2.0
+      bricabrac-sfmodules:
+        specifier: ^0.14.1
+        version: 0.14.1
       dbay:
         specifier: ^16.1.6
         version: 16.1.6
@@ -122,8 +122,8 @@ packages:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
     engines: {node: '>=8'}
 
-  bricabrac-single-file-modules@0.2.0:
-    resolution: {integrity: sha512-3NIVPVnjYXaV5hj4PBy9/El4FdOfkm+DHivwsuqPG3sjGttZHuFfp+uyAdD1UBCrnsORcYJrTdBW97e7l2ujpw==}
+  bricabrac-sfmodules@0.14.1:
+    resolution: {integrity: sha512-qIEnl9MOq61r+HiiUZzGtSp4rDDkzyPHdm1rue9/7uE+1YeJiySFQnHk5Fv34e3/+Ylsj7AHHVF/yr5A0X+YzQ==}
 
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
@@ -711,7 +711,7 @@ snapshots:
     dependencies:
       fill-range: 7.1.1
 
-  bricabrac-single-file-modules@0.2.0: {}
+  bricabrac-sfmodules@0.14.1: {}
 
   buffer@5.7.1:
     dependencies:
