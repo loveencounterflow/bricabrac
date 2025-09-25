@@ -192,7 +192,7 @@ run_pipeline = ( db ) ->
         fmt = if is_header then fmt_header else fmt_value
         echo '' +
           f"#{color+bg_color}│"                                             +
-          f"#{C.overline1}"                                                 +
+          f"#{C.overline}"                                                  +
           f"#{ fmt row.cmd_pattern                }:<20c;│"                 +
           f"#{ fmt row.cmd_role                   }:<20c;│"                 +
           f"#{ fmt row.cmd_prefix                 }:<20c;│"                 +
