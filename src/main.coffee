@@ -26,7 +26,7 @@ A_trash                   = ( require 'trash' ).default
 COMMAND_PARSER            = require './command-parser'
 { Pipeline,             } = require 'moonriver'
 { f,                    } = require 'effstring'
-SFMODULES                 = require 'bricabrac-single-file-modules'
+SFMODULES                 = require 'bricabrac-sfmodules'
 
 
 #===========================================================================================================
@@ -175,7 +175,7 @@ run_pipeline = ( db ) ->
       send d
     #.......................................................................................................
     $show: ->
-      SFMODULES_dev = require '../../bricabrac-single-file-modules'
+      SFMODULES_dev = require '../../bricabrac-sfmodules'
       { ansi_colors_and_effects: C, } = SFMODULES_dev.require_ansi_colors_and_effects()
       color       = C.black
       bg_color    = C.bg_gainsboro
