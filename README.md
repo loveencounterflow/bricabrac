@@ -31,6 +31,12 @@ compose files by including other files
     it can either be a `node:` internal (in which case note is taken that the module is not suitable for
     browser usage) or a general name that should be resolvable using the npm registry (in which case a
     dependency entry should be added to `package.json` in case it's not already there)
+    * **Note** in the case that non-local, non-NodeJS `require()` calls are found, the source file *must* be
+      part of a npm-compatible modukle in the sense that it has a discoverable `package.json`; the exact
+      name used in the `require()` call must also be a key of the `dependencies` object in that file; key
+      and value will be used to formulate a dependency for the target; in case the key in the *target*
+      dependencies is already present, the origin's value (i.e. the origin's SemVer declaration) *must* be
+      compatible with the target's value (using `( require 'semver' ).satisfies( ... )`)
   * *all* other uses of `require()` (e.g. `require 'my' + 'package'` and anything more complicated) generate
     warnings
 
