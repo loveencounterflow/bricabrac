@@ -1,4 +1,5 @@
 
+
 # Bric-A-Brac
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -7,6 +8,8 @@
 
 - [Bric-A-Brac](#bric-a-brac)
   - [To Do](#to-do)
+    - [Major Tasks / Outline](#major-tasks--outline)
+    - [Other](#other)
     - [Treatment of Slashes](#treatment-of-slashes)
   - [Scratchpad](#scratchpad)
 
@@ -20,8 +23,28 @@ compose files by including other files
 
 ## To Do
 
+### Major Tasks / Outline
+
+* **`[—]`** parse CoffeeScript or JavaScript sources to find all `require()` calls with static, literal
+  argument:
+  * calls with one static, literal path argument can (potentially) be resolved; when the path is non-local,
+    it can either be a `node:` internal (in which case note is taken that the module is not suitable for
+    browser usage) or a general name that should be resolvable using the npm registry (in which case a
+    dependency entry should be added to `package.json` in case it's not already there)
+  * *all* other uses of `require()` (e.g. `require 'my' + 'package'` and anything more complicated) generate
+    warnings
+
+* **`[—]`** prepare `bric-a-brac.json`:
+  * resolve all key/value pairs of `strings` recursively
+  * resolve all keys of `strings` in mapping values (non-recursively)
+
+
+
+### Other
+
+
 * **`[—]`** MVP:
-  * **`[—]`** there is a `bricabrac-mappings.json` file with the following structure:
+  * **`[—]`** there is a `bricabrac.json` file with the following structure:
     * an object with a single key `mappings`
         * extensibility: in addition to `mappings`, optional other keys can be added:
           * `strings` is an object whose keys are string constants and whose values are replacements; values
