@@ -34,10 +34,12 @@ compose files by including other files
   * *all* other uses of `require()` (e.g. `require 'my' + 'package'` and anything more complicated) generate
     warnings
 
-* **`[—]`** prepare `bric-a-brac.json`:
+* **`[—]`** transform `bric-a-brac.json` to `_bric-a-brac.compiled.json`:
+  * apply templates to get default values for cache locations &c
   * resolve all key/value pairs of `strings` recursively
-  * resolve all keys of `strings` in mapping values (non-recursively)
-
+  * resolve all keys of `strings` contained in mapping values (non-recursively)
+  * resolve symbolic and relative paths (turn them into non-symbolic absolute paths) such as
+    `file:///path/to/file`, `~/path/to/file`, `./path/to/file`, `../../path/to/file`
 
 
 ### Other
@@ -57,7 +59,7 @@ compose files by including other files
           * instead of string values, optional objects can be used; in that case, the string value becomes
             value of entry with key `location`
           * another key `prefer` can be added; where present, first the value of `prefer` is tested, if it
-            cannot be resolved, then `url` is used
+            cannot be resolved, then `location` is used
     * resolution:
       * URL is resolved (e.g. using `fetch()`)
       * when
