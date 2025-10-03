@@ -59,13 +59,25 @@ compose files by including other files
             themselves can contain keys of `strings` that will be matched recursively, as shown below;
             circular mappings are forbidden and will cause an error
     * `mappings` is an object whose
-      * keys are local paths relative to the project folder,
+      * **keys are local target paths** (absolute paths or paths relative to the project folder),
+        * **Note**: **must validate paths**: must be inside target project file system tree, must not be
+          inside `.git`(?) or `node_modules`(?) (or at least prohibit those locations by default?)
       * values are URLs that typically refer to single files.
         * extensibility:
           * instead of string values, optional objects can be used; in that case, the string value becomes
             value of entry with key `location`
           * another key `prefer` can be added; where present, first the value of `prefer` is tested, if it
             cannot be resolved, then `location` is used
+      * **Limitations**:
+        * since keys are local target paths, they **do not coincide with strings to be used to load / import
+          / require the data**
+        * since local target paths are object keys, they must be unique; on a basic level that means that
+          each Bric-A-Brac mapping will create one distinct file somewhere in the target tree; however, one
+          can imagine an extension syntax like `path/to/file.coffee#1`, `path/to/file.coffee#2`,
+          `path/to/file.coffee#3`, where an ordering and uniqueness is achieved.—*Counterargument*: both too
+          complicated and too limited; rather, use 'insertion tags' (arbitrary regular expressions for
+          insertion markers compliant with arbitrary formats) to pull content into target files; in that
+          case, what should the keys look like?
     * resolution:
       * URL is resolved (e.g. using `fetch()`)
       * when
