@@ -66,8 +66,17 @@ compose files by including other files
         * extensibility:
           * instead of string values, optional objects can be used; in that case, the string value becomes
             value of entry with key `location`
-          * another key `prefer` can be added; where present, first the value of `prefer` is tested, if it
-            cannot be resolved, then `location` is used
+          * <del>another key `prefer` can be added; where present, first the value of `prefer` is tested, if
+            it cannot be resolved, then `location` is used</del>
+          * <ins>The `prefer` key should be viewed as strictly being there for local development only; as
+            such, its presence and/or usage should also be restricted to the machine where development takes
+            place. It would be cumbersome to elide and re-insert `prefer` keys each time a
+            `bric-a-brac.json` file is staged and committed</ins>
+          * an override file `.bric-a-brac.overrides.json` that should be added to `.gitignore` may contain
+            any settings that are valid on the local machine
+          * figure out how to test installation and package correctness both *with* and *without*
+            `.bric-a-brac.overrides.json` being read; one option would be to temporarily rename the file to,
+            say, `.DONT-USE.bric-a-brac.overrides.json`, also registered to get `.gitignore`d.
       * **Limitations**:
         * since keys are local target paths, they **do not coincide with strings to be used to load / import
           / require the data**
@@ -133,6 +142,7 @@ Note that GitHub allows to shorten commit IDs; these settings are equivalent to 
 ```
 
 ```json
+// in `bric-a-brac.json`:
 {
   "strings": {
     "::gh::": "https://raw.githubusercontent.com",
@@ -140,10 +150,14 @@ Note that GitHub allows to shorten commit IDs; these settings are equivalent to 
     "::local::": "~/jzr/"
     },
   "mappings": {
-    "src/bricabrac-capture-output.coffee":
-      { "location": "::gh::/loveencounterflow/bricabrac-sfmodules/::bb-2025-10-02::/src/unstable-capture-output.coffee",
-        "prefer": "::local::/bricabrac-sfmodules/src/unstable-capture-output.coffee"
-      }
+    "src/bricabrac-capture-output.coffee": "::gh::/loveencounterflow/bricabrac-sfmodules/::bb-2025-10-02::/src/unstable-capture-output.coffee"
+  }
+}
+
+// in `.bric-a-brac.overrides.json`:
+{
+  "mappings": {
+    "src/bricabrac-capture-output.coffee": "::gh::/loveencounterflow/bricabrac-sfmodules/::bb-2025-10-02::/src/unstable-capture-output.coffee"
   }
 }
 ```
