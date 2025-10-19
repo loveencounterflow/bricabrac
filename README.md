@@ -9,6 +9,7 @@
 - [Bric-A-Brac](#bric-a-brac)
   - [To Do](#to-do)
     - [Major Tasks / Outline](#major-tasks--outline)
+    - [Operational Principles](#operational-principles)
     - [Other](#other)
     - [Treatment of Slashes](#treatment-of-slashes)
   - [Scratchpad](#scratchpad)
@@ -46,6 +47,27 @@ compose files by including other files
   * resolve all keys of `strings` contained in mapping values (non-recursively)
   * resolve symbolic and relative paths (turn them into non-symbolic absolute paths) such as
     `file:///path/to/file`, `~/path/to/file`, `./path/to/file`, `../../path/to/file`
+
+
+### Operational Principles
+
+* In the configuration file, `/path/to/app/bric-a-brac.json` (typically next to `/path/to/app/package.json`,
+  `/path/to/app/node_modules/` and `/path/to/app/.git/`), we configure *mappings* from **targets** in the
+  form of (local) file system (FS) paths to (remote or local) **sources** in the form of URLs and FS paths.
+
+* Relative paths in `require()` calls in a given module `/path/to/app/src/frobulator.coffee` are of course
+  resolved relative to the containing folder, i.e. `/path/to/app/src/`. Targets in `bric-a-brac.json` should
+  likewise be given as relative paths, but those will be resolved relative to *their* containing folder,
+  i.e. `/path/to/app/`. This means that in order to procure a source file
+  `/path/to/app/src/frob-helpers.coffee`, a mapping like `{ "./src/frob-helpers.coffee":
+  "https://github.com/...", }` should be set up, while in `src/frobulator.coffee` one will write `require
+  './frob-helpers` to load that module. Observe that we're omitting the file extension; since each source
+  file `src/${name}.coffee` will (at least in the software that I write) be transpiled into a JS target file
+  `lib/${name}.js`, `require './frob-helpers` resolves ultimately to `/path/to/app/lib/frob-helpers.js`.
+
+* In a build step, resources will be fetched from their
+  * Say there is a file
+
 
 
 ### Other
