@@ -55,6 +55,10 @@ compose files by including other files
   `/path/to/app/node_modules/` and `/path/to/app/.git/`), we configure *mappings* from **targets** in the
   form of (local) file system (FS) paths to (remote or local) **sources** in the form of URLs and FS paths.
 
+> * **targets** -> **destinations**
+> * **sources** -> **origins**
+
+
 * Relative paths in `require()` calls in a given module `/path/to/app/src/frobulator.coffee` are of course
   resolved relative to the containing folder, i.e. `/path/to/app/src/`. Targets in `bric-a-brac.json` should
   likewise be given as relative paths, but those will be resolved relative to *their* containing folder,
@@ -65,8 +69,44 @@ compose files by including other files
   file `src/${name}.coffee` will (at least in the software that I write) be transpiled into a JS target file
   `lib/${name}.js`, `require './frob-helpers` resolves ultimately to `/path/to/app/lib/frob-helpers.js`.
 
-* In a build step, resources will be fetched from their
-  * Say there is a file
+
+```
+https://raw.githubusercontent.com/loveencounterflow/bricabrac-sfmodules/2980e28985fe7b96772a7213a2cd9ae3f263177a/src/jetstream.brics.coffee
+https://raw.githubusercontent.com/loveencounterflow/bricabrac-sfmodules/2980e28985fe7b96772a7213a2cd9ae3f263177a/lib/jetstream.brics.js
+file:///path/to/app/bricabrac/https/raw.githubusercontent.com/loveencounterflow/bricabrac-sfmodules/2980e28985fe7b96772a7213a2cd9ae3f263177a/src/jetstream.brics.coffee
+file:///path/to/app/bricabrac/https/raw.githubusercontent.com/loveencounterflow/bricabrac-sfmodules/2980e28985fe7b96772a7213a2cd9ae3f263177a/lib/jetstream.brics.js
+```
+
+* **`origin`**: URL of file (repo) origin
+* **`destination`**: path to destination
+* **`cfg_path`**:
+* **`lockfile_path`**: where file IDs are kept
+* **`method`**: `'git'`, `'github'`, `'single'` (like retrieving 1 file with `wget`)
+* **`cache_path`**: where `git clone` goes to
+* **`keep_cache`**: `true`/`false`, whether to keep cached mirror
+* **`branch_ref`**: when method is `'github'`, something like `'refs/heads/main'` or commit ID (can be partial; at least 4, 7 more common and may be necessary)
+* **`presets`**: redundant where identical with file extension (e.g. `presets: 'coffee'` entails `finalize: 'touch $destination`)
+* **`finalize`**: shell command to run after files have been mirrored to destination
+
+```
+
+`
+https://raw.githubusercontent.com/loveencounterflow/bricabrac-sfmodules/    refs/heads/main/                             lib/jetstreams/main.js
+https://raw.githubusercontent.com/loveencounterflow/bricabrac-sfmodules/    62aa04542e807863b3f402cb10656051db1a988a/    lib/jetstreams/main.js
+|--------------------------------|
+                                 |-----------------|
+                                                   |-------------------|
+                                                                       |-------------------------------------------------|
+                                                                                                                         |-----------------------|
+domain                            user_name         repo_name          branch_ref                                        file_path
+
+
+# the same file in ordinary view:
+
+https://github.com/               loveencounterflow/bricabrac-sfmodules/    blob/main/                                   lib/jetstreams/main.js
+
+
+```
 
 
 
