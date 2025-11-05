@@ -81,7 +81,20 @@ file:///path/to/app/bricabrac/https/raw.githubusercontent.com/loveencounterflow/
 * **`destination`**: path to destination
 * **`cfg_path`**:
 * **`lockfile_path`**: where file IDs are kept
-* **`method`**: `'git'`, `'github'`, `'single'` (like retrieving 1 file with `wget`)
+* **`method`**:
+  * `'single'`: (default) retrieves as single file (with its remote path mirrored) using `wget`:
+
+  ```bash
+  wget                        \
+    --tries=inf               \
+    --continue                \
+    --recursive               \
+    --directory-prefix https  \
+    "https://raw.githubusercontent.com/$user_name/$project_name/$branch_ref/path/to/file.ext"
+  ```
+
+  * `'git'`: for local git repos
+  * `'github'`: for remote git repos hosted on github.com
 * **`cache_path`**: where `git clone` goes to
 * **`keep_cache`**: `true`/`false`, whether to keep cached mirror
 * **`branch_ref`**: when method is `'github'`, something like `'refs/heads/main'` or commit ID (can be partial; at least 4, 7 more common and may be necessary)
