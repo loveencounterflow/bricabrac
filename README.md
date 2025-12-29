@@ -13,6 +13,7 @@
     - [Other](#other)
     - [Treatment of Slashes](#treatment-of-slashes)
   - [Scratchpad](#scratchpad)
+    - [Patching](#patching)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -286,3 +287,12 @@ The expanded version of the above strings catalog has all the right slashes in t
 
 * **`[—]`** it's conceivable that when mapping a specific set of lines from a source file that all other
   lines should be replaced by `\n` so linecounts are preserved
+
+### Patching
+
+* https://en.wikipedia.org/wiki/File:Harvard_Mark_I_program_tape.agr.jpg
+* https://en.wikipedia.org/wiki/Patch_(computing)
+* https://en.wikipedia.org/wiki/Patch_(Unix)
+
+Allow to apply patches to source files
+
