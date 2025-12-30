@@ -24,7 +24,9 @@ mkdir -p ./bvfs/origin/file
 
 
 #===========================================================================================================
-download 'https://raw.githubusercontent.com/loveencounterflow/hypedown/refs/heads/main/README.md'
+download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/brics-rebuild'
+download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/brics-update'
+download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/git-check-is-clean'
 # ln -s
 show-layout ./bvfs/
 

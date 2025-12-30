@@ -1,7 +1,11 @@
 {
   "resolved-mappings": {
     "src/destination.js": {
-      "url": "github.com/loveencounterflow/foo/bar/source.js",
+      "url": "https://raw.githubusercontent.com/loveencounterflow/hypedown/refs/heads/main/README.md",
+      "sha256": "optional-existing-checksum"
+    },
+    "src/hypedown-main.coffee": {
+      "url": "https://raw.githubusercontent.com/loveencounterflow/hypedown/refs/heads/main/src/main.coffee",
       "sha256": "optional-existing-checksum"
     }
   }
