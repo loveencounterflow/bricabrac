@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+home="$(realpath "$(realpath "${BASH_SOURCE[0]}" | xargs dirname)"/..)"; cd "$home"
+
+# ---------- ANSI colors ----------
+RED=$'\033[31m'
+# GREEN=$'\033[32m'
+# YELLOW=$'\033[33m'
+# BLUE=$'\033[34m'
+# BOLD=$'\033[1m'
+RESET=$'\033[0m'
+
+exit_with_error() {
+  echo "${RED}Error:${RESET} $*" >&2
+  exit 1
+	}
+
+# skipgitcheck='yes'
+skipgitcheck='no'
+
+# ---------- git cleanliness (for mutating commands) ----------
+if [ $skipgitcheck != 'yes' ] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    exit_with_error "Git repository has uncommitted changes"
+  fi
+fi
