@@ -5,153 +5,164 @@ BRICS_FILE="brics.json"
 FORCE=0
 WGET=""
 JQ=""
+CMD=""
 
-# -------------------------------
-# argument parsing
-# -------------------------------
-for arg in "$@"; do
-  case "$arg" in
-    -f|--force)
-      FORCE=1
-      ;;
-    --wget=*)
-      WGET="${arg#*=}"
-      ;;
-    --jq=*)
-      JQ="${arg#*=}"
-      ;;
-    *)
-      echo "Unknown argument: $arg" >&2
-      exit 1
-      ;;
-  esac
-done
+# ---------- ANSI colors ----------
+RED=$'\033[31m'
+GREEN=$'\033[32m'
+YELLOW=$'\033[33m'
+BLUE=$'\033[34m'
+BOLD=$'\033[1m'
+RESET=$'\033[0m'
 
-# -------------------------------
-# tool resolution
-# -------------------------------
-if [[ -z "$WGET" ]]; then
-  if ! command -v wget >/dev/null 2>&1; then
-    echo "Error: wget not found on PATH." >&2
-    exit 1
-  fi
-  WGET="$(command -v wget)"
-fi
+die() {
+  echo "${RED}Error:${RESET} $*" >&2
+  exit 1
+}
 
-if [[ -z "$JQ" ]]; then
-  if ! command -v jq >/dev/null 2>&1; then
-    echo "Error: jq not found on PATH." >&2
-    exit 1
-  fi
-  JQ="$(command -v jq)"
-fi
+info()  { echo "${BLUE}==>${RESET} $*"; }
+warn()  { echo "${YELLOW}Warning:${RESET} $*"; }
+ok()    { echo "${GREEN}✔${RESET} $*"; }
 
-# -------------------------------
-# git cleanliness check
-# -------------------------------
-if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-  if ! git diff --quiet || ! git diff --cached --quiet; then
-    echo "Error: Git repository has uncommitted changes. Aborting." >&2
-    exit 1
-  fi
-fi
+confirm() {
+  [[ "$FORCE" -eq 1 ]] && return 0
+  read -r -p "$(echo -e "${BOLD}$1${RESET} [y/N] ")" ans
+  [[ "$ans" == "y" || "$ans" == "Y" ]]
+}
 
-# -------------------------------
-# helpers
-# -------------------------------
 sha256() {
   sha256sum "$1" | awk '{print $1}'
 }
 
-confirm() {
-  local prompt="$1"
-  if [[ "$FORCE" -eq 1 ]]; then
-    return 0
-  fi
-  read -r -p "$prompt [y/N] " ans
-  [[ "$ans" == "y" || "$ans" == "Y" ]]
-}
+# ---------- parse command ----------
+[[ $# -lt 1 ]] && die "usage: brics <command> [options]"
+CMD="$1"; shift
 
-# -------------------------------
-# sanity checks
-# -------------------------------
-if [[ ! -f "$BRICS_FILE" ]]; then
-  echo "Error: $BRICS_FILE not found." >&2
-  exit 1
-fi
-
-# -------------------------------
-# main loop
-# -------------------------------
-"$JQ" -r '
-  .["resolved-mappings"]
-  | to_entries[]
-  | "\(.key)\t\(.value.url)\t\(.value.sha256 // "")"
-' "$BRICS_FILE" |
-while IFS=$'\t' read -r target url expected; do
-  [[ "$url" =~ ^https?:// ]] || url="https://$url"
-
-  mkdir -p "$(dirname "$target")"
-
-  # ---------------------------------
-  # existing file check
-  # ---------------------------------
-  if [[ -f "$target" && -n "$expected" ]]; then
-    current="$(sha256 "$target")"
-    if [[ "$current" != "$expected" ]]; then
-      echo "Local file differs from recorded checksum:"
-      echo "  $target"
-      echo "  expected: $expected"
-      echo "  actual:   $current"
-      confirm "Overwrite local file?" || continue
-    fi
-  fi
-
-  # ---------------------------------
-  # download to temp file
-  # ---------------------------------
-  tmp="$(mktemp)"
-  echo "Downloading $url"
-  "$WGET" -q -O "$tmp" "$url"
-
-  downloaded="$(sha256 "$tmp")"
-
-  # ---------------------------------
-  # checksum verification
-  # ---------------------------------
-  if [[ -n "$expected" && "$downloaded" != "$expected" ]]; then
-    echo "Downloaded file checksum mismatch:"
-    echo "  target:   $target"
-    echo "  expected: $expected"
-    echo "  actual:   $downloaded"
-    confirm "Accept new version and overwrite?" || {
-      rm -f "$tmp"
-      continue
-    }
-  fi
-
-  # ---------------------------------
-  # TOFU case
-  # ---------------------------------
-  if [[ -z "$expected" ]]; then
-    echo "No checksum recorded for $target (TOFU)."
-    echo "Downloaded checksum: $downloaded"
-    confirm "Accept and record checksum?" || {
-      rm -f "$tmp"
-      continue
-    }
-
-    # write checksum back into brics.json
-    tmpjson="$(mktemp)"
-    "$JQ" --arg t "$target" --arg h "$downloaded" '
-      .["resolved-mappings"][$t].sha256 = $h
-    ' "$BRICS_FILE" > "$tmpjson"
-    mv "$tmpjson" "$BRICS_FILE"
-  fi
-
-  mv "$tmp" "$target"
-  echo "Updated $target"
-
+# ---------- parse global flags ----------
+for arg in "$@"; do
+  case "$arg" in
+    -f|--force) FORCE=1 ;;
+    --wget=*)   WGET="${arg#*=}" ;;
+    --jq=*)     JQ="${arg#*=}" ;;
+  esac
 done
 
-echo "Done."
+# ---------- resolve tools ----------
+: "${WGET:=$(command -v wget || true)}"
+: "${JQ:=$(command -v jq || true)}"
+
+[[ -x "$WGET" ]] || die "wget not found"
+[[ -x "$JQ"   ]] || die "jq not found"
+
+# ---------- git cleanliness (for mutating commands) ----------
+if [[ "$CMD" != "check" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  if ! git diff --quiet || ! git diff --cached --quiet; then
+    die "Git repository has uncommitted changes"
+  fi
+fi
+
+# ---------- ensure brics.json ----------
+if [[ ! -f "$BRICS_FILE" ]]; then
+  [[ "$CMD" == "add" ]] || die "$BRICS_FILE not found"
+  echo '{ "resolved-mappings": {} }' > "$BRICS_FILE"
+  ok "created $BRICS_FILE"
+fi
+
+# ---------- helpers ----------
+download_origin() {
+  local url="$1"
+  local proto="${url%%://*}"
+  local base="bvfs/origin/$proto"
+  mkdir -p "$base"
+
+  info "fetching $url"
+  "$WGET" --prefix="$base" --no-host-directories --cut-dirs=0 "$url" \
+    || die "failed to download $url"
+
+  echo "$base/${url#*://}"
+}
+
+# ============================================================
+# COMMAND: brics add <url> <target>
+# ============================================================
+if [[ "$CMD" == "add" ]]; then
+  [[ $# -lt 2 ]] && die "usage: brics add <url> <target>"
+  url="$1"; target="$2"
+
+  origin="$(download_origin "$url")"
+  checksum="$(sha256 "$origin")"
+
+  mkdir -p "$(dirname "$target")"
+  ln -sf "$(realpath "$origin")" "$target"
+
+  tmp="$(mktemp)"
+  "$JQ" --arg t "$target" --arg u "$url" --arg h "$checksum" '
+    .["resolved-mappings"][$t] = { url: $u, sha256: $h }
+  ' "$BRICS_FILE" > "$tmp"
+  mv "$tmp" "$BRICS_FILE"
+
+  ok "added $target"
+  exit 0
+fi
+
+# ============================================================
+# COMMAND: brics update
+# ============================================================
+if [[ "$CMD" == "update" ]]; then
+  "$JQ" -r '
+    .["resolved-mappings"] | to_entries[]
+    | "\(.key)\t\(.value.url)\t\(.value.sha256)"
+  ' "$BRICS_FILE" |
+  while IFS=$'\t' read -r target url expected; do
+    origin="$(download_origin "$url")"
+    actual="$(sha256 "$origin")"
+
+    if [[ "$actual" != "$expected" ]]; then
+      warn "checksum mismatch for $target"
+      echo "  expected: $expected"
+      echo "  actual:   $actual"
+      confirm "accept new version?" || continue
+
+      tmp="$(mktemp)"
+      "$JQ" --arg t "$target" --arg h "$actual" '
+        .["resolved-mappings"][$t].sha256 = $h
+      ' "$BRICS_FILE" > "$tmp"
+      mv "$tmp" "$BRICS_FILE"
+    fi
+
+    mkdir -p "$(dirname "$target")"
+    ln -sf "$(realpath "$origin")" "$target"
+    ok "updated $target"
+  done
+  exit 0
+fi
+
+# ============================================================
+# COMMAND: brics check
+# ============================================================
+if [[ "$CMD" == "check" ]]; then
+  "$JQ" -r '
+    .["resolved-mappings"] | to_entries[]
+    | "\(.key)\t\(.value.url)\t\(.value.sha256)"
+  ' "$BRICS_FILE" |
+  while IFS=$'\t' read -r target url expected; do
+    if [[ ! -e "$target" ]]; then
+      warn "missing target $target"
+      continue
+    fi
+
+    file="$(readlink -f "$target")"
+    actual="$(sha256 "$file")"
+
+    if [[ "$actual" != "$expected" ]]; then
+      warn "changed file $target"
+      echo "  expected: $expected"
+      echo "  actual:   $actual"
+    else
+      ok "$target"
+    fi
+  done
+  exit 0
+fi
+
+die "unknown command: $CMD"
