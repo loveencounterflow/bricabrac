@@ -28,7 +28,7 @@ download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/hea
 download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/brics-update'
 download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/git-check-is-clean'
 # ln -s
-show-layout ./bvfs/
+tree ./bvfs/
 
 
 
