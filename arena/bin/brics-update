@@ -8,10 +8,10 @@ download() {
   local url="$1"
   local protocol="${url%%://*}"
   local prefix="bvfs/origin/$protocol"
-  echo '—————————————————————————————————————————————————————————–'
-  echo "Ωbrics___1 url:    		$url"
-  echo "Ωbrics___2 protocol:  $protocol"
-  echo "Ωbrics___3 prefix: 		$prefix"
+  # echo '—————————————————————————————————————————————————————————–'
+  # echo "Ωbrics___1 url:    		$url"
+  # echo "Ωbrics___2 protocol:  $protocol"
+  # echo "Ωbrics___3 prefix: 		$prefix"
   # mkdir -p "$prefix"
 	echo wget --tries=inf -c --recursive --directory-prefix "$prefix" "$url"
 	wget --tries=inf -c --recursive --directory-prefix "$prefix" "$url"
