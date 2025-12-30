@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# set -x
 
 BRICS_FILE="brics.json"
 FORCE=0
@@ -75,9 +74,7 @@ download_origin() {
   local proto="${url%%://*}"
   local base="bvfs/origin/$proto"
   echo '—————————————————————————————————————————————————————————–'
-  echo "Ωbrics___1 url:    $url"
-  echo "Ωbrics___2 proto:  $proto"
-  echo "Ωbrics___3 base:   $base"
+  echo "$base"
   exit 113
   mkdir -p "$base"
 
