@@ -78,7 +78,7 @@ download_origin() {
   echo "Ωbrics___1 url:    $url"
   echo "Ωbrics___2 proto:  $proto"
   echo "Ωbrics___3 base:   $base"
-  exit 111
+  exit 113
   mkdir -p "$base"
 
   info "fetching $url"
