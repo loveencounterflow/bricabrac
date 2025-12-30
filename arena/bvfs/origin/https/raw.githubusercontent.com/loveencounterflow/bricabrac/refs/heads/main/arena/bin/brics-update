@@ -1,0 +1,202 @@
+#!/usr/bin/env bash
+set -euo pipefail
+home="$(realpath "$(realpath "${BASH_SOURCE[0]}" | xargs dirname)"/..)"; cd "$home"
+./bin/git-check-is-clean
+
+#===========================================================================================================
+download() {
+  local url="$1"
+  local protocol="${url%%://*}"
+  local prefix="bvfs/origin/$protocol"
+  echo '—————————————————————————————————————————————————————————–'
+  echo "Ωbrics___1 url:    		$url"
+  echo "Ωbrics___2 protocol:  $protocol"
+  echo "Ωbrics___3 prefix: 		$prefix"
+  # mkdir -p "$prefix"
+	echo wget --tries=inf -c --recursive --directory-prefix "$prefix" "$url"
+	wget --tries=inf -c --recursive --directory-prefix "$prefix" "$url"
+}
+
+#===========================================================================================================
+mkdir -p ./bvfs/origin/http
+mkdir -p ./bvfs/origin/https
+mkdir -p ./bvfs/origin/file
+
+
+#===========================================================================================================
+download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/brics-rebuild'
+download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/brics-update'
+download 'https://raw.githubusercontent.com/loveencounterflow/bricabrac/refs/heads/main/arena/bin/git-check-is-clean'
+# ln -s
+show-layout ./bvfs/
+
+
+
+# #!/usr/bin/env bash
+# set -euo pipefail
+
+# # ---------- ANSI colors ----------
+# RED=$'\033[31m'
+# GREEN=$'\033[32m'
+# YELLOW=$'\033[33m'
+# BLUE=$'\033[34m'
+# BOLD=$'\033[1m'
+# RESET=$'\033[0m'
+
+# die() {
+#   echo "${RED}Error:${RESET} $*" >&2
+#   # exit 1
+# }
+
+# info()  { echo "${BLUE}==>${RESET} $*"; }
+# warn()  { echo "${YELLOW}Warning:${RESET} $*"; }
+# ok()    { echo "${GREEN}✔${RESET} $*"; }
+
+# confirm() {
+#   [[ "$FORCE" -eq 1 ]] && return 0
+#   read -r -p "$(echo -e "${BOLD}$1${RESET} [y/N] ")" ans
+#   [[ "$ans" == "y" || "$ans" == "Y" ]]
+# }
+
+# sha256() {
+#   sha256sum "$1" | awk '{print $1}'
+# }
+
+# # ---------- parse command ----------
+# [[ $# -lt 1 ]] && die "usage: brics <command> [options]"
+# CMD="$1"; shift
+
+# # ---------- parse global flags ----------
+# for arg in "$@"; do
+#   case "$arg" in
+#     -f|--force) FORCE=1 ;;
+#     --wget=*)   WGET="${arg#*=}" ;;
+#     --jq=*)     JQ="${arg#*=}" ;;
+#   esac
+# done
+
+# # ---------- resolve tools ----------
+# : "${WGET:=$(command -v wget || true)}"
+# : "${JQ:=$(command -v jq || true)}"
+
+# [[ -x "$WGET" ]] || die "wget not found"
+# [[ -x "$JQ"   ]] || die "jq not found"
+
+# # ---------- git cleanliness (for mutating commands) ----------
+# if [[ "$CMD" != "check" ]] && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+#   if ! git diff --quiet || ! git diff --cached --quiet; then
+#     die "Git repository has uncommitted changes"
+#   fi
+# fi
+
+# # ---------- ensure brics.json ----------
+# if [[ ! -f "$BRICS_FILE" ]]; then
+#   [[ "$CMD" == "add" ]] || die "$BRICS_FILE not found"
+#   echo '{ "resolved-mappings": {} }' > "$BRICS_FILE"
+#   ok "created $BRICS_FILE"
+# fi
+
+# # ---------- helpers ----------
+# download_origin() {
+#   local url="$1"
+#   local proto="${url%%://*}"
+#   local base="bvfs/origin/$proto"
+#   # set -x
+#   echo '—————————————————————————————————————————————————————————–'
+#   echo "Ωbrics___1 url:    $url"
+#   echo "Ωbrics___2 proto:  $proto"
+#   echo "Ωbrics___3 base:   $base"
+#   mkdir -p "$base"
+
+#   info "fetching $url"
+#   # "$WGET" --directory-prefix="$base" --no-host-directories --cut-dirs=0 "$url" \
+#   "$WGET" --directory-prefix="$base" "$url" \
+#     || die "failed to download $url"
+
+#   echo "$base/${url#*://}"
+# }
+
+# # ============================================================
+# # COMMAND: brics add <url> <target>
+# # ============================================================
+# if [[ "$CMD" == "add" ]]; then
+#   [[ $# -lt 2 ]] && die "usage: brics add <url> <target>"
+#   url="$1"; target="$2"
+
+#   origin="$(download_origin "$url")"
+#   checksum="$(sha256 "$origin")"
+
+#   mkdir -p "$(dirname "$target")"
+#   ln -sf "$(realpath "$origin")" "$target"
+
+#   tmp="$(mktemp)"
+#   "$JQ" --arg t "$target" --arg u "$url" --arg h "$checksum" '
+#     .["resolved-mappings"][$t] = { url: $u, sha256: $h }
+#   ' "$BRICS_FILE" > "$tmp"
+#   mv "$tmp" "$BRICS_FILE"
+
+#   ok "added $target"
+#   exit 0
+# fi
+
+# # ============================================================
+# # COMMAND: brics update
+# # ============================================================
+# if [[ "$CMD" == "update" ]]; then
+#   "$JQ" -r '
+#     .["resolved-mappings"] | to_entries[]
+#     | "\(.key)\t\(.value.url)\t\(.value.sha256)"
+#   ' "$BRICS_FILE" |
+#   while IFS=$'\t' read -r target url expected; do
+#     origin="$(download_origin "$url")"
+#     actual="$(sha256 "$origin")"
+
+#     if [[ "$actual" != "$expected" ]]; then
+#       warn "checksum mismatch for $target"
+#       echo "  expected: $expected"
+#       echo "  actual:   $actual"
+#       confirm "accept new version?" || continue
+
+#       tmp="$(mktemp)"
+#       "$JQ" --arg t "$target" --arg h "$actual" '
+#         .["resolved-mappings"][$t].sha256 = $h
+#       ' "$BRICS_FILE" > "$tmp"
+#       mv "$tmp" "$BRICS_FILE"
+#     fi
+
+#     mkdir -p "$(dirname "$target")"
+#     ln -sf "$(realpath "$origin")" "$target"
+#     ok "updated $target"
+#   done
+#   exit 0
+# fi
+
+# # ============================================================
+# # COMMAND: brics check
+# # ============================================================
+# if [[ "$CMD" == "check" ]]; then
+#   "$JQ" -r '
+#     .["resolved-mappings"] | to_entries[]
+#     | "\(.key)\t\(.value.url)\t\(.value.sha256)"
+#   ' "$BRICS_FILE" |
+#   while IFS=$'\t' read -r target url expected; do
+#     if [[ ! -e "$target" ]]; then
+#       warn "missing target $target"
+#       continue
+#     fi
+
+#     file="$(readlink -f "$target")"
+#     actual="$(sha256 "$file")"
+
+#     if [[ "$actual" != "$expected" ]]; then
+#       warn "changed file $target"
+#       echo "  expected: $expected"
+#       echo "  actual:   $actual"
+#     else
+#       ok "$target"
+#     fi
+#   done
+#   exit 0
+# fi
+
+# die "unknown command: $CMD"

@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+set -euo pipefail
+home="$(realpath "$(realpath "${BASH_SOURCE[0]}" | xargs dirname)"/..)"; cd "$home"
+./bin/git-check-is-clean
+
+set +e
+trash ./bvfs
+if [ $? -eq 0 ]; then
+	echo "trashed ./bvfs"
+else
+	echo "trash command exited with code $?"
+	fi
+
+./bin/brics-update
